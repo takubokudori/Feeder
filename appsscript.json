@@ -1,0 +1,14 @@
+{
+  "timeZone": "America/New_York",
+  "dependencies": {
+    "libraries": [
+      {
+        "userSymbol": "htmlparser2",
+        "libraryId": "1TLbGgQBCztnB0lOhcTYKg2UpXtpdDwocvfcx44w1tqFnHDJC5ZXy_BDo",
+        "version": "2"
+      }
+    ]
+  },
+  "exceptionLogging": "STACKDRIVER",
+  "runtimeVersion": "V8"
+}
