@@ -1,6 +1,6 @@
 # Feeder
 
-A Google Apps Script (GAS) to send translated RSS feeds to Slack. 
+A Google Apps Script (GAS) to send translated RSS feeds to Slack.
 
 # Usage
 
