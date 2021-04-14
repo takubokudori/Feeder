@@ -34,14 +34,19 @@ function dryRun() {
 function execute(dryRun: boolean) {
     const sheet = IdSheet.getActiveIdSheet();
     const feedUrls = CONFIG.feed_urls;
-    const slackUrls = CONFIG.slack_urls;
-    const targetLang = CONFIG.target_lang;
+    if (feedUrls === undefined) {
+        Logger.log("feed_url is empty!");
+        return;
+    }
+    const slackUrls = CONFIG.slack_urls ?? [];
+    const targetLang = CONFIG.target_lang ?? "";
+    const translate_title = CONFIG.translate_title ?? false;
 
     const acquiredIDs = sheet.getAcquiredIDs();
-    execute2(sheet, dryRun, feedUrls, slackUrls, targetLang, acquiredIDs);
+    execute2(sheet, dryRun, feedUrls, slackUrls, targetLang, translate_title, acquiredIDs);
 }
 
-function execute2(sheet, dryRun, feedUrls, slackUrls, targetLang, acquiredIDs) {
+function execute2(sheet, dryRun, feedUrls, slackUrls, targetLang, translate_title, acquiredIDs) {
     for (let feedUrl of feedUrls) {
         feedUrl = feedUrl.trim();
         Logger.log(`Check ${feedUrl}`);
@@ -50,11 +55,11 @@ function execute2(sheet, dryRun, feedUrls, slackUrls, targetLang, acquiredIDs) {
             Logger.log(`Feeder doesn't support the feed format: ${feedUrl}`);
             // continue;
         }
-        execute3(sheet, dryRun, items, slackUrls, targetLang, acquiredIDs);
+        execute3(sheet, dryRun, items, slackUrls, targetLang, translate_title, acquiredIDs);
     }
 }
 
-function execute3(sheet, dryRun, items, slackUrls, targetLang, acquiredIDs) {
+function execute3(sheet, dryRun, items, slackUrls, targetLang, translate_title, acquiredIDs) {
     for (const item of items.getEntries2()) {
         if (acquiredIDs.has(item.id)) {
             Logger.log(`${item.id} is already acquired.`);
@@ -62,11 +67,15 @@ function execute3(sheet, dryRun, items, slackUrls, targetLang, acquiredIDs) {
         }
 
         Logger.log(`${item.id} is new!`);
+        let title = item.title;
         let description = formatText(item.description);
 
         // translates if not dry run mode.
         if (!dryRun && targetLang !== "" && targetLang !== "en") {
             description = LanguageApp.translate(description, "en", targetLang);
+        }
+        if (!dryRun && translate_title && targetLang !== "" && targetLang !== "en") {
+            title = LanguageApp.translate(title, "en", targetLang);
         }
 
         // append ID.
@@ -74,7 +83,8 @@ function execute3(sheet, dryRun, items, slackUrls, targetLang, acquiredIDs) {
         sheet.appendId(item.id);
 
         const feedText = `${item.link}
-${item.title}
+${title}
+
 ${description}`;
         Logger.log(feedText);
 
