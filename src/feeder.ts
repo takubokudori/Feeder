@@ -154,10 +154,10 @@ function getEntriesData(feeder) {
         const link = feeder.getLink(entry);
         ret.push(
             {
-                description: description,
                 id: link,
-                title: title,
-                link: link
+                title,
+                link,
+                description
             }
         );
     }
