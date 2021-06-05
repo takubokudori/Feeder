@@ -54,10 +54,10 @@ function execute(dryRun: boolean) {
             let description = formatText(item.description);
 
             // translates if not dry run mode.
-            if (!dryRun && feed.target_lang !== "" && feed.target_lang !== "en") {
+            if (!dryRun && feed.target_lang !== "" && feed.source_lang !== "" && feed.target_lang !== feed.source_lang) {
                 description = LanguageApp.translate(description, feed.source_lang, feed.target_lang);
             }
-            if (!dryRun && feed.translate_title && feed.target_lang !== "" && feed.target_lang !== "en") {
+            if (!dryRun && feed.translate_title && feed.target_lang !== "" && feed.source_lang !== "" && feed.target_lang !== feed.source_lang) {
                 title = LanguageApp.translate(title, feed.source_lang, feed.target_lang);
             }
 
