@@ -23,6 +23,8 @@ vi src/config.ts
 * An example to config.ts
 
 ```
+import {GlobalFeedConfig} from "./configuration";
+
 const CONFIG = {
     slack_urls: [
         "https://hooks.slack.com/services/Y0ur/w5bHO0k/URL",
