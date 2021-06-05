@@ -29,7 +29,7 @@ const CONFIG = {
     ],
     target_lang: "ja",
     translate_title: true,
-    feed: [
+    feeds: [
         {feed_url: "http://example.com/rss", source_lang: "ja", target_lang: "en"},
         "http://example.com/atom.xml",
         "http://example.com/index.rdf",
@@ -40,9 +40,9 @@ const CONFIG = {
 Edit `parameters`.
 
 - slack_urls : Slack webhook URLs.
-- source_lang : Source language.
-- target_lang : Target language.
-- translate_title : If this is true, titles will be translated.
+- source_lang : Source language. `"en"` by default.
+- target_lang : Target language. No translation by default.
+- translate_title : If this is true, titles will be translated. `false` by default.
 - feeds : RSS feed URLs.
     - feeds can specify a URL string, or a config object.
     - Each feed can have its own configurations, which can override the global configurations.
