@@ -10,8 +10,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-
-function fetchFeedUrl(url: string): Feeder {
+export function fetchFeedUrl(url: string): Feeder {
     const xml = UrlFetchApp.fetch(url).getContentText();
     const document = XmlService.parse(xml);
     const root = document.getRootElement();
@@ -32,7 +31,7 @@ function getFeeder(root): Feeder {
     }
 }
 
-interface Feeder {
+export interface Feeder {
     getEntries();
 
     getEntries2();
@@ -46,7 +45,7 @@ interface Feeder {
     getId(entry): string;
 }
 
-class Feed implements Feeder {
+export class Feed implements Feeder {
     static nameSpace = XmlService.getNamespace('http://www.w3.org/2005/Atom');
     root;
 
@@ -80,7 +79,7 @@ class Feed implements Feeder {
 
 }
 
-class Rss implements Feeder {
+export class Rss implements Feeder {
     root;
 
     constructor(root) {
@@ -112,7 +111,7 @@ class Rss implements Feeder {
     }
 }
 
-class Rdf implements Feeder {
+export class Rdf implements Feeder {
     static nameSpace = XmlService.getNamespace('http://purl.org/rss/1.0/');
     root;
 

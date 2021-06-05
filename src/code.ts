@@ -1,5 +1,3 @@
-///<reference path="config.ts"/>
-///<reference path="feeder.ts"/>
 /*
 Copyright 2021 takubokudori
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,9 +12,11 @@ limitations under the License.
 */
 import Sheet = GoogleAppsScript.Spreadsheet.Sheet;
 import Integer = GoogleAppsScript.Integer;
+import {feedConfigToFeedInfo} from "./configuration";
+import {fetchFeedUrl} from "./feeder";
 
 /**
- * Run
+ * run
  * @constructor
  */
 function run() {
@@ -24,7 +24,7 @@ function run() {
 }
 
 /**
- * DryRun doesn't send to slack.
+ * dryRun doesn't send to slack.
  * @constructor
  */
 function dryRun() {
@@ -33,65 +33,48 @@ function dryRun() {
 
 function execute(dryRun: boolean) {
     const sheet = IdSheet.getActiveIdSheet();
-    const feedUrls = CONFIG.feed_urls;
-    if (feedUrls === undefined) {
-        Logger.log("feed_url is empty!");
-        return;
-    }
-    const slackUrls = CONFIG.slack_urls ?? [];
-    const targetLang = CONFIG.target_lang ?? "";
-    const translate_title = CONFIG.translate_title ?? false;
-
     const acquiredIDs = sheet.getAcquiredIDs();
-    execute2(sheet, dryRun, feedUrls, slackUrls, targetLang, translate_title, acquiredIDs);
-}
 
-function execute2(sheet, dryRun, feedUrls, slackUrls, targetLang, translate_title, acquiredIDs) {
-    for (let feedUrl of feedUrls) {
-        feedUrl = feedUrl.trim();
-        Logger.log(`Check ${feedUrl}`);
-        const items = fetchFeedUrl(feedUrl);
+    for (let i = 0; i < exports.CONFIG.feeds.length; i++) {
+        let feed = feedConfigToFeedInfo(exports.CONFIG, i);
+        Logger.log(`Check ${feed.feed_url}`);
+        const items = fetchFeedUrl(feed.feed_url);
         if (items === undefined) {
-            Logger.log(`Feeder doesn't support the feed format: ${feedUrl}`);
+            Logger.log(`Feeder doesn't support the feed format: ${feed.feed_url}`);
             // continue;
         }
-        execute3(sheet, dryRun, items, slackUrls, targetLang, translate_title, acquiredIDs);
-    }
-}
+        for (const item of items.getEntries2()) {
+            if (acquiredIDs.has(item.id)) {
+                Logger.log(`${item.id} is already acquired.`);
+                continue;
+            }
 
-function execute3(sheet, dryRun, items, slackUrls, targetLang, translate_title, acquiredIDs) {
-    for (const item of items.getEntries2()) {
-        if (acquiredIDs.has(item.id)) {
-            Logger.log(`${item.id} is already acquired.`);
-            continue;
-        }
+            Logger.log(`${item.id} is new!`);
+            let title = item.title;
+            let description = formatText(item.description);
 
-        Logger.log(`${item.id} is new!`);
-        let title = item.title;
-        let description = formatText(item.description);
+            // translates if not dry run mode.
+            if (!dryRun && feed.target_lang !== "" && feed.target_lang !== "en") {
+                description = LanguageApp.translate(description, feed.source_lang, feed.target_lang);
+            }
+            if (!dryRun && feed.translate_title && feed.target_lang !== "" && feed.target_lang !== "en") {
+                title = LanguageApp.translate(title, feed.source_lang, feed.target_lang);
+            }
 
-        // translates if not dry run mode.
-        if (!dryRun && targetLang !== "" && targetLang !== "en") {
-            description = LanguageApp.translate(description, "en", targetLang);
-        }
-        if (!dryRun && translate_title && targetLang !== "" && targetLang !== "en") {
-            title = LanguageApp.translate(title, "en", targetLang);
-        }
+            // append ID.
+            acquiredIDs.add(item.id);
+            sheet.appendId(item.id);
 
-        // append ID.
-        acquiredIDs.add(item.id);
-        sheet.appendId(item.id);
-
-        const feedText = `${item.link}
+            const feedText = `${item.link}
 ${title}
 
 ${description}`;
-        Logger.log(feedText);
+            Logger.log(feedText);
 
-        // sends if not dry run mode.
-        if (!dryRun) {
-            for (const slackUrl of slackUrls) {
-                postToSlack(slackUrl.trim(), feedText);
+            if (!dryRun) {
+                feed.slack_urls.forEach(slack_url => {
+                    postToSlack(slack_url.trim(), feedText);
+                });
             }
         }
     }
@@ -175,7 +158,7 @@ function convertHtmlToText(txt: string) {
     let isFirst = true;
     const parser = new htmlparser.Parser(
         {
-            ontext: function (text) {
+            ontext(text) {
                 if (!isFirst) ret += " ";
                 ret += text;
                 isFirst = false;

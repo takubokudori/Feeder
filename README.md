@@ -16,7 +16,7 @@ git clone https://github.com/takubokudori/Feeder
 
 ```
 cd Feeder
-npm install
+yarn install --dev
 vi src/config.ts
 ```
 
@@ -27,20 +27,25 @@ const CONFIG = {
     slack_urls: [
         "https://hooks.slack.com/services/Y0ur/w5bHO0k/URL",
     ],
-    feed_urls: [
-        "http://example.com/rss",
+    target_lang: "ja",
+    translate_title: true,
+    feed: [
+        {feed_url: "http://example.com/rss", source_lang: "ja", target_lang: "en"},
         "http://example.com/atom.xml",
         "http://example.com/index.rdf",
     ],
-    target_lang: "ja",
 };
 ```
 
-Edit `slack_urls`, `feed_urls`, `target_lang`.
+Edit `parameters`.
 
 - slack_urls : Slack webhook URLs.
-- feed_urls : Feed URLs.
-- target_lang : Language to be translated.
+- source_lang : Source language.
+- target_lang : Target language.
+- translate_title : If this is true, titles will be translated.
+- feeds : RSS feed URLs.
+    - feeds can specify a URL string, or a config object.
+    - Each feed can have its own configurations, which can override the global configurations.
 
 3. Upload to GAS.
 
