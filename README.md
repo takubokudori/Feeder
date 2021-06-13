@@ -2,6 +2,8 @@
 
 A Google Apps Script (GAS) to send translated RSS feeds to Slack.
 
+If you want to get arXiv feeds, please use [ArXiv-feeder](https://github.com/takubokudori/ArXiv-feeder).
+
 # Usage
 
 0. Install and setup [clasp](https://github.com/google/clasp) and npm and Slack webhook.
