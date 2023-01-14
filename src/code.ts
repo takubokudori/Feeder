@@ -1,5 +1,5 @@
 /*
-Copyright 2021 takubokudori
+Copyright 2023 takubokudori
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -34,36 +34,62 @@ function dryRun() {
 function execute(dryRun: boolean) {
     const sheet = IdSheet.getActiveIdSheet();
     const acquiredIDs = sheet.getAcquiredIDs();
+    const abortTiming = exports.CONFIG.abort ?? "no";
+    switch (abortTiming) {
+        case "immediately":
+        case "yes":
+        case "no":
+            break;
+        default:
+            throw new Error(`Invalid abort parameter: ${abortTiming}`);
+    }
+    let errorMessage = "";
 
     for (let i = 0; i < exports.CONFIG.feeds.length; i++) {
         let feed = feedConfigToFeedInfo(exports.CONFIG, i);
         Logger.log(`Check ${feed.feed_url}`);
-        const items = fetchFeedUrl(feed.feed_url);
-        if (items === undefined) {
-            Logger.log(`Feeder doesn't support the feed format: ${feed.feed_url}`);
-            // continue;
+        let items;
+        try {
+            items = fetchFeedUrl(feed.feed_url);
+            if (items === undefined) {
+                const msg = `Feeder doesn't support the feed format: ${feed.feed_url}`
+                Logger.log(msg);
+                errorMessage += `${msg}\n`;
+                continue;
+            }
+        } catch (e) {
+            if (abortTiming === "immediately") throw e;
+            const msg = `Failed to get feed ${feed.feed_url}: ${e}`;
+            Logger.log(msg);
+            errorMessage += `${msg}\n`;
+            continue;
         }
         for (const item of items.getEntries2()) {
             if (acquiredIDs.has(item.id)) {
-                Logger.log(`${item.id} is already acquired.`);
+                Logger.log(`[Already] ${item.id}`);
                 continue;
             }
+            Logger.log(`[  New  ] ${item.id}`);
 
-            Logger.log(`${item.id} is new!`);
             let title = item.title;
             let description = formatText(item.description);
 
             // translates if not dry run mode.
-            if (!dryRun && feed.target_lang !== "" && feed.source_lang !== "" && feed.target_lang !== feed.source_lang) {
-                description = LanguageApp.translate(description, feed.source_lang, feed.target_lang);
-            }
-            if (!dryRun && feed.translate_title && feed.target_lang !== "" && feed.source_lang !== "" && feed.target_lang !== feed.source_lang) {
-                title = LanguageApp.translate(title, feed.source_lang, feed.target_lang);
+            try {
+                if (!dryRun && feed.target_lang !== "" && feed.source_lang !== "" && feed.target_lang !== feed.source_lang) {
+                    description = LanguageApp.translate(description, feed.source_lang, feed.target_lang);
+                }
+                if (!dryRun && feed.translate_title && feed.target_lang !== "" && feed.source_lang !== "" && feed.target_lang !== feed.source_lang) {
+                    title = LanguageApp.translate(title, feed.source_lang, feed.target_lang);
+                }
+            } catch (e) {
+                if (abortTiming === "immediately") throw e;
+                const msg = `Failed to translate: ${e}`;
+                Logger.log(msg);
+                errorMessage += `${msg}\n`;
+                continue;
             }
 
-            // append ID.
-            acquiredIDs.add(item.id);
-            sheet.appendId(item.id);
 
             const feedText = `${item.link}
 ${title}
@@ -71,12 +97,30 @@ ${title}
 ${description}`;
             Logger.log(feedText);
 
+            let errSlack = false;
             if (!dryRun) {
                 feed.slack_urls.forEach(slack_url => {
-                    postToSlack(slack_url.trim(), feedText);
+                    try {
+                        postToSlack(slack_url.trim(), feedText);
+                    } catch (e) {
+                        if (abortTiming === "immediately") throw e;
+                        errSlack = true;
+                        const msg = `Failed to post to Slack ${slack_url}: ${e}`;
+                        Logger.log(msg);
+                        errorMessage += `${msg}\n`;
+                    }
                 });
             }
+
+            if (!errSlack) {
+                acquiredIDs.add(item.id);
+                sheet.appendId(item.id);
+            }
         }
+    }
+    if (errorMessage.length !== 0) {
+        Logger.log(errorMessage);
+        if (abortTiming === "yes") throw new Error(errorMessage);
     }
 }
 

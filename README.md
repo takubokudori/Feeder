@@ -31,6 +31,7 @@ const CONFIG = {
     slack_urls: [
         "https://hooks.slack.com/services/Y0ur/w5bHO0k/URL",
     ],
+    abort: "no",
     target_lang: "ja",
     translate_title: true,
     feeds: [
@@ -44,6 +45,10 @@ const CONFIG = {
 Edit `parameters`.
 
 - slack_urls : Slack webhook URLs.
+- abort: Abort timing. `"no"` by default.
+    - "immediately": Abort immediately when an error occurs.
+    - "yes": Accumulate a log when an error occurs and finally abort.
+    - "no": Accumulate a log when an error occurs and finally do not abort.
 - source_lang : Source language. `"en"` by default.
 - target_lang : Target language. No translation by default.
 - translate_title : If this is true, titles will be translated. `false` by default.
